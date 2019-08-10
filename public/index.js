@@ -8,22 +8,29 @@ let connection = new RTCPeerConnection({    //экземпляр RTCPeerConnecti
 });
 
 
-
-
-
 const Ws = adonis.Ws(`wss://${location.host}`).connect();    //Соединяемся к серверу по WebSocket (реализация adonis)
 let socket = Ws.subscribe("rooms:" + location.pathname.split('/')[2]);         // Подписываемся на канал "connections"
 // Ws.on("open", () => {
 // });
 socket.on('candidate', async (candidate) => {       //событие приема ice кандидата от сервера
   //console.log(1,candidate)
-  if (candidate){
+  if (candidate) {
     await connection.addIceCandidate(candidate)
   }
 })
 socket.on('sdp', async (answer) => {                //событие приема sdp ответа от сервера
   await connection.setRemoteDescription(answer)
 })
+
+socket.on('maintainer left', () => {
+  console.log(`maintainer left`);
+  remoteVideo.srcObject = null
+})
+
+// socket.on('close', () => {
+//   console.log(`disconnected`);
+//   remoteVideo.srcObject = null
+// })
 
 
 let remoteVideo
@@ -44,7 +51,7 @@ async function f() {      //установить на странице объе�
   videos.className = 'grid';
   //videos.appendChild(localVideo);
   videos.appendChild(remoteVideo);
-  window.onload = function(){
+  window.onload = function () {
     document.body.appendChild(videos);
   }
 
@@ -84,16 +91,16 @@ async function connect() {
   socket.emit('sdp', offer)       //отправляем серверу
 
 
-  connection.onicecandidate = async function({candidate}){      //событие появления ice кандидата
+  connection.onicecandidate = async function ({candidate}) {      //событие появления ice кандидата
     socket.emit('candidate', candidate)
   }
-  connection.ontrack = function(e){
+  connection.ontrack = function (e) {
     console.log('track!')
   }
 
   connection.onconnectionstatechange = () => {
-    console.log('state ',  connection.connectionState)
-    if( connection.connectionState === 'disconnected' ||
+    console.log('state ', connection.connectionState)
+    if (connection.connectionState === 'disconnected' ||
       connection.connectionState === 'failed') {
       console.log(`disconnected`);
       remoteVideo.srcObject = null
@@ -103,8 +110,11 @@ async function connect() {
   console.log('connect end')
 }
 
-async function start(){
+
+async function start() {
   await f()
   await connect()
 }
+
 start()
+
