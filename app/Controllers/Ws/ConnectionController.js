@@ -1,7 +1,8 @@
 'use strict'
 
-let rooms = []
+const RTCPeerConnection = require('wrtc').RTCPeerConnection;
 
+let rooms = []
 class Room {
   constructor(name){
     this.id = rooms.reduce(function (max, room) {
@@ -16,7 +17,7 @@ class Room {
     this.maintainer.tracks = []
     this.viewers = []
     rooms.push(this)
-    console.log(`room added: name-${this.name}, id-${this.id}`)
+    console.log(`room created with name:${this.name}, id:${this.id}`)
   }
   addMaintainer(connection){
     connection.ontrack =  (e) => {
@@ -27,10 +28,8 @@ class Room {
       this.maintainer.tracks.push(e.track)
     }
     connection.onconnectionstatechange = () => {
-      console.log('state ', this.name, ':', connection.connectionState)
       if( connection.connectionState === 'disconnected' ||
         connection.connectionState === 'failed') {
-        console.log(`${this.name} disconnected`);
         this.deleteRoom()
       }
     }
@@ -44,25 +43,24 @@ class Room {
   }
   deleteRoom(){
     this.maintainer.connection.close()
-    this.viewers.forEach(viewer => viewer.close())
+    this.maintainer.connection.websocket.close()
+    this.viewers.forEach(viewer => {
+      viewer.close()
+      viewer.websocket.close()
+    })
     rooms.splice(
     rooms.findIndex( (room) => room.id === this.id )
     , 1)
+    console.log(`room ${this.name} deleted`);
   }
 }
 
 
-const RTCPeerConnection = require('wrtc').RTCPeerConnection;
-
 
 class ConnectionController {    //реализация adonis
   constructor({socket, request}) {
-    console.log('constructor')
     this.socket = socket
     this.request = request
-
-
-
 
     this.connection = new RTCPeerConnection({     //экземпляр RTCPeerConnection
       configuration:{
@@ -81,26 +79,18 @@ class ConnectionController {    //реализация adonis
       this.socket.emit('candidate', candidate)
     }
 
-    // this.connection.onconnectionstatechange = (e) => {
-    //   console.log('state:',this.connection.connectionState)
-    //   // if(this.connection.iceConnectionState === 'disconnected') {
-    //   //   console.log('Disconnected');
-    //   // }
+    this.connection.websocket = this.socket
+
+    // // ---------------------Тест канала данных - нужно для проверки соедининия---------
+    // let dc = this.connection.createDataChannel("channel");
+    // dc.onmessage = function (event) {
+    //   console.log("received: " + event.data);
+    // };
+    // this.connection.ondatachannel = function (e) {
+    //   dc = e.channel
+    //   dc.send('to Client')
     // }
-
-    // ---------------------Тест канала данных - нужно для проверки соедининия---------
-    let dc = this.connection.createDataChannel("channel");
-    dc.onmessage = function (event) {
-      console.log("received: " + event.data);
-    };
-    this.connection.ondatachannel = function (e) {
-      dc = e.channel
-      dc.send('to Client')
-    }
-    // ---------------------Тест канала данных - нужно для проверки соедининия---------
-
-
-
+    // // ---------------------Тест канала данных - нужно для проверки соедининия---------
 
 
     let roomName = socket.topic.split(':')[1]

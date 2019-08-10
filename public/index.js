@@ -27,7 +27,6 @@ socket.on('sdp', async (answer) => {                //событие прием�
 
 
 let remoteVideo
-let localVideo
 let localStream
 
 
@@ -60,19 +59,19 @@ async function f() {      //установить на странице объе�
   console.log('f end')
 }
 
-// ---------------------Тест канала данных - нужно для проверки соедининия---------
-let dc = connection.createDataChannel("channel");
-
-dc.onmessage = function (event) {
-  console.log("received: " + event.data);
-};
-
-
-connection.ondatachannel = function (e) {
-  dc = e.channel
-  dc.send('to Server')
-}
-// ---------------------Тест канала данных - нужно для проверки соедининия---------
+// // ---------------------Тест канала данных - нужно для проверки соедининия---------
+// let dc = connection.createDataChannel("channel");
+//
+// dc.onmessage = function (event) {
+//   console.log("received: " + event.data);
+// };
+//
+//
+// connection.ondatachannel = function (e) {
+//   dc = e.channel
+//   dc.send('to Server')
+// }
+// // ---------------------Тест канала данных - нужно для проверки соедининия---------
 
 
 async function connect() {
