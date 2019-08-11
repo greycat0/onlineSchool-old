@@ -1,59 +1,8 @@
 'use strict'
 
 const RTCPeerConnection = require('wrtc').RTCPeerConnection;
-
-let rooms = []
-class Room {
-  constructor(name){
-    this.id = rooms.reduce(function (max, room) {
-      console.log('id:', room.id, max)
-      if (room.id > max){
-        return room.id
-      }
-    }, 0) + 1
-    this.name = name
-    this.maintainer = {}
-    this.maintainer.connection = null
-    this.maintainer.tracks = []
-    this.viewers = []
-    rooms.push(this)
-    console.log(`room created with name:${this.name}, id:${this.id}`)
-  }
-  addMaintainer(connection){
-    connection.ontrack =  (e) => {
-      console.log('main track!!!')
-      if (e.track.kind === 'video') {
-        this.maintainer.connection.addTrack(e.track)
-      }
-      this.maintainer.tracks.push(e.track)
-    }
-    connection.onconnectionstatechange = () => {
-      if( connection.connectionState === 'disconnected' ||
-        connection.connectionState === 'failed') {
-        this.deleteRoom()
-      }
-    }
-    this.maintainer.connection = connection
-    console.log('mainteiner added to ', this.name, ' room')
-  }
-  addViewer(connection){
-    this.maintainer.tracks.forEach(track => connection.addTrack(track))
-    this.viewers.push(connection)
-    console.log('viewer added to ', this.name, ' room')
-  }
-  deleteRoom(){
-    this.maintainer.connection.close()
-    this.maintainer.connection.websocket.close()
-    this.viewers.forEach(viewer => {
-      viewer.close()
-      viewer.websocket.close()
-    })
-    rooms.splice(
-    rooms.findIndex( (room) => room.id === this.id )
-    , 1)
-    console.log(`room ${this.name} deleted`);
-  }
-}
+let Room = require('../../Custom/Room').Room
+let rooms = require('../../Custom/Room').rooms
 
 
 
@@ -93,15 +42,15 @@ class ConnectionController {    //реализация adonis
     // // ---------------------Тест канала данных - нужно для проверки соедининия---------
 
 
-    let roomName = socket.topic.split(':')[1]
+    let roomID = socket.topic.split(':')[1]
     let room =  rooms.find(function (room) {
-      return room.name === roomName
+      return room.id === roomID
     })
     if (room) {
       room.addViewer(this.connection)
     }
     else {
-      let room = new Room(roomName)
+      let room = new Room(roomID)
       room.addMaintainer(this.connection)
     }
   }
