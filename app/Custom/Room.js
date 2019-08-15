@@ -28,6 +28,14 @@ class Room {
       }
     }
 
+    connection.websocket.on('close', () => {
+      connection.websocket = null
+    })
+
+    connection.websocket.on('error', () => {
+      connection.websocket = null
+    })
+
     // connection.websocket.on('close', () => {
     //   this.deleteRoom()  //this.unplugMaintainer()
     // })
@@ -53,7 +61,9 @@ class Room {
     if (this.maintainer) {
       this.maintainer.close()
       this.viewers.forEach(viewer => {
-        viewer.websocket.emit('maintainer left')
+        if (viewer.websocket) {
+          viewer.websocket.emit('maintainer left')
+        }
       })
       this.maintainer = null
       console.log('maintainer left')
@@ -72,6 +82,14 @@ class Room {
       }
     }
 
+    connection.websocket.on('close', () => {
+      connection.websocket = null
+    })
+
+    connection.websocket.on('error', () => {
+      connection.websocket = null
+    })
+
     // connection.websocket.on('close', () => {
     //   this.unplugViewer(connection)
     // })
@@ -88,14 +106,18 @@ class Room {
   deleteRoom() {
     if (this.maintainer) {
       this.maintainer.close()
-      this.maintainer.websocket.close()
-      this.maintainer.websocket = null
+      if (this.maintainer.websocket) {
+        this.maintainer.websocket.close()
+        this.maintainer.websocket = null
+      }
     }
 
     this.viewers.forEach(viewer => {
       viewer.close()
-      viewer.websocket.close()
-      viewer.websocket = null
+      if (viewer.websocket) {
+        viewer.websocket.close()
+        viewer.websocket = null
+      }
     })
     rooms.splice(
       rooms.findIndex((room) => room.id === this.id)
