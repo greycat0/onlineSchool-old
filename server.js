@@ -1,4 +1,5 @@
 'use strict'
+const http = require('http')
 const https = require('https')
 const pem = require('pem')
 /*
@@ -34,6 +35,17 @@ pem.createCertificate({ days: 1, selfSigned: true }, (error, keys) => {
     .appRoot(__dirname)
     .wsServer()
     .fireHttpServer((handler) => {
+
+      let server = new http.Server()
+      server.listen(process.env.HTTP_PORT, process.env.HOST)
+      server.on('request', (req, res) => {
+        const hostName = req.headers.host.split(':')[0]
+        res.writeHead(302, {
+          Location: `https://${hostName}:${process.env.PORT}${req.url}`
+        })
+        res.end()
+      })
+
       return https.createServer(options, handler)
     })
     .catch(console.error)
